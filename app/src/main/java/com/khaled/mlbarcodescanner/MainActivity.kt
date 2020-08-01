@@ -1,22 +1,24 @@
 package com.khaled.mlbarcodescanner
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import java.lang.IllegalStateException
 import kotlin.IllegalStateException
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -28,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var cameraSelector: CameraSelector? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var previewUseCase: Preview? = null
+    private var analysisUseCase: ImageAnalysis? = null
 
     private val screenAspectRatio: Int
         get() {
@@ -52,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             .observe(this, Observer { provider: ProcessCameraProvider? ->
                 cameraProvider = provider
                 if (isCameraPermissionGranted()) {
-                    bindPreviewUseCase()
+                    bindCameraUseCases()
                 } else {
                     ActivityCompat.requestPermissions(
                         this,
@@ -64,6 +67,10 @@ class MainActivity : AppCompatActivity() {
             )
     }
 
+    private fun bindCameraUseCases() {
+        bindPreviewUseCase()
+        bindAnalyseUseCase()
+    }
 
     private fun bindPreviewUseCase() {
         if (cameraProvider == null) {
@@ -84,11 +91,75 @@ class MainActivity : AppCompatActivity() {
                 cameraSelector!!,
                 previewUseCase
             )
-        }catch (illegalStateException: IllegalStateException){
+        } catch (illegalStateException: IllegalStateException) {
             Log.e(TAG, illegalStateException.message)
-        } catch (illegalArgumentException: IllegalArgumentException){
+        } catch (illegalArgumentException: IllegalArgumentException) {
             Log.e(TAG, illegalArgumentException.message)
         }
+    }
+
+    private fun bindAnalyseUseCase() {
+        // Note that if you know which format of barcode your app is dealing with, detection will be
+        // faster to specify the supported barcode formats one by one, e.g.
+        // BarcodeScannerOptions.Builder()
+        //     .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+        //     .build();
+        val barcodeScanner: BarcodeScanner = BarcodeScanning.getClient()
+
+        if (cameraProvider == null) {
+            return
+        }
+        if (analysisUseCase != null) {
+            cameraProvider!!.unbind(analysisUseCase)
+        }
+
+        analysisUseCase = ImageAnalysis.Builder()
+            .setTargetAspectRatio(screenAspectRatio)
+            .setTargetRotation(previewView!!.display.rotation)
+            .build()
+
+
+        // Initialize our background executor
+        val cameraExecutor = Executors.newSingleThreadExecutor()
+
+        analysisUseCase?.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
+            processImageProxy(barcodeScanner, imageProxy)
+        })
+
+        try {
+            cameraProvider!!.bindToLifecycle(/* lifecycleOwner= */this,
+                cameraSelector!!,
+                analysisUseCase
+            )
+        } catch (illegalStateException: IllegalStateException) {
+            Log.e(TAG, illegalStateException.message)
+        } catch (illegalArgumentException: IllegalArgumentException) {
+            Log.e(TAG, illegalArgumentException.message)
+        }
+    }
+
+    @SuppressLint("UnsafeExperimentalUsageError")
+    private fun processImageProxy(
+        barcodeScanner: BarcodeScanner,
+        imageProxy: ImageProxy
+    ) {
+        val inputImage =
+            InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
+
+        barcodeScanner.process(inputImage)
+            .addOnSuccessListener { barcodes ->
+                barcodes.forEach {
+                    Log.d(TAG, it.rawValue)
+                }
+            }
+            .addOnFailureListener {
+                Log.e(TAG, it.message)
+            }.addOnCompleteListener {
+                // When the image is from CameraX analysis use case, must call image.close() on received
+                // images when finished using them. Otherwise, new images may not be received or the camera
+                // may stall.
+                imageProxy.close()
+            }
     }
 
     /**
@@ -117,7 +188,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         if (requestCode == PERMISSION_CAMERA_REQUEST) {
             if (isCameraPermissionGranted()) {
-                bindPreviewUseCase()
+                bindCameraUseCases()
             } else {
                 Log.e(TAG, "no camera permission")
             }
