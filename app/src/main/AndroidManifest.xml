@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.khaled.mlbarcodescanner">
+
+    <uses-sdk tools:overrideLibrary="
+      androidx.camera.camera2, androidx.camera.core,
+      androidx.camera.view, androidx.camera.lifecycle" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"
@@ -10,6 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity">
+            <meta-data
+                android:name="com.google.android.gms.version"
+                android:value="@integer/google_play_services_version"/>
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
