@@ -3,10 +3,10 @@ package com.khaled.mlbarcodescanner
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -14,11 +14,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import kotlin.IllegalStateException
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import kotlin.IllegalStateException
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -52,18 +52,20 @@ class MainActivity : AppCompatActivity() {
             this, ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         ).get(CameraXViewModel::class.java)
             .processCameraProvider
-            .observe(this, Observer { provider: ProcessCameraProvider? ->
-                cameraProvider = provider
-                if (isCameraPermissionGranted()) {
-                    bindCameraUseCases()
-                } else {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(Manifest.permission.CAMERA),
-                        PERMISSION_CAMERA_REQUEST
-                    )
+            .observe(
+                this,
+                Observer { provider: ProcessCameraProvider? ->
+                    cameraProvider = provider
+                    if (isCameraPermissionGranted()) {
+                        bindCameraUseCases()
+                    } else {
+                        ActivityCompat.requestPermissions(
+                            this,
+                            arrayOf(Manifest.permission.CAMERA),
+                            PERMISSION_CAMERA_REQUEST
+                        )
+                    }
                 }
-            }
             )
     }
 
@@ -84,10 +86,11 @@ class MainActivity : AppCompatActivity() {
             .setTargetAspectRatio(screenAspectRatio)
             .setTargetRotation(previewView!!.display.rotation)
             .build()
-        previewUseCase!!.setSurfaceProvider(previewView!!.createSurfaceProvider())
+        previewUseCase!!.setSurfaceProvider(previewView!!.surfaceProvider)
 
         try {
-            cameraProvider!!.bindToLifecycle(/* lifecycleOwner= */this,
+            cameraProvider!!.bindToLifecycle(
+                /* lifecycleOwner= */this,
                 cameraSelector!!,
                 previewUseCase
             )
@@ -118,16 +121,19 @@ class MainActivity : AppCompatActivity() {
             .setTargetRotation(previewView!!.display.rotation)
             .build()
 
-
-        // Initialize our background executor
+        // Initialize our background executor 
         val cameraExecutor = Executors.newSingleThreadExecutor()
 
-        analysisUseCase?.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
-            processImageProxy(barcodeScanner, imageProxy)
-        })
+        analysisUseCase?.setAnalyzer(
+            cameraExecutor,
+            ImageAnalysis.Analyzer { imageProxy ->
+                processImageProxy(barcodeScanner, imageProxy)
+            }
+        )
 
         try {
-            cameraProvider!!.bindToLifecycle(/* lifecycleOwner= */this,
+            cameraProvider!!.bindToLifecycle(
+                /* lifecycleOwner= */this,
                 cameraSelector!!,
                 analysisUseCase
             )
@@ -163,7 +169,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     *  [androidx.camera.core.ImageAnalysis],[androidx.camera.core.Preview] requires enum value of
+     *  [androidx.camera.core.ImageAnalysis], [androidx.camera.core.Preview] requires enum value of
      *  [androidx.camera.core.AspectRatio]. Currently it has values of 4:3 & 16:9.
      *
      *  Detecting the most suitable ratio for dimensions provided in @params by counting absolute
