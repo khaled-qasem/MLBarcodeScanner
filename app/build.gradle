@@ -45,10 +45,10 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0"
 
 // Barcode model dependencies
-    implementation 'com.google.mlkit:barcode-scanning:16.0.1'
+    implementation 'com.google.mlkit:barcode-scanning:16.1.1'
 
 // CameraX dependencies
-    implementation "androidx.camera:camera-camera2:1.0.0-beta06"
-    implementation "androidx.camera:camera-lifecycle:1.0.0-beta06"
-    implementation "androidx.camera:camera-view:1.0.0-alpha13"
+    implementation "androidx.camera:camera-camera2:1.1.0-alpha01"
+    implementation "androidx.camera:camera-lifecycle:1.1.0-alpha01"
+    implementation "androidx.camera:camera-view:1.0.0-alpha21"
 }
