@@ -52,9 +52,7 @@ class MainActivity : AppCompatActivity() {
             this, ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         ).get(CameraXViewModel::class.java)
             .processCameraProvider
-            .observe(
-                this,
-                Observer { provider: ProcessCameraProvider? ->
+            .observe(this) { provider: ProcessCameraProvider? ->
                     cameraProvider = provider
                     if (isCameraPermissionGranted()) {
                         bindCameraUseCases()
@@ -66,7 +64,6 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 }
-            )
     }
 
     private fun bindCameraUseCases() {
@@ -95,9 +92,9 @@ class MainActivity : AppCompatActivity() {
                 previewUseCase
             )
         } catch (illegalStateException: IllegalStateException) {
-            Log.e(TAG, illegalStateException.message)
+            Log.e(TAG, illegalStateException.message ?: "IllegalStateException")
         } catch (illegalArgumentException: IllegalArgumentException) {
-            Log.e(TAG, illegalArgumentException.message)
+            Log.e(TAG, illegalArgumentException.message ?: "IllegalArgumentException")
         }
     }
 
@@ -138,9 +135,9 @@ class MainActivity : AppCompatActivity() {
                 analysisUseCase
             )
         } catch (illegalStateException: IllegalStateException) {
-            Log.e(TAG, illegalStateException.message)
+            Log.e(TAG, illegalStateException.message ?: "IllegalStateException")
         } catch (illegalArgumentException: IllegalArgumentException) {
-            Log.e(TAG, illegalArgumentException.message)
+            Log.e(TAG, illegalArgumentException.message ?: "IllegalArgumentException")
         }
     }
 
@@ -159,7 +156,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener {
-                Log.e(TAG, it.message)
+                Log.e(TAG, it.message ?: it.toString())
             }.addOnCompleteListener {
                 // When the image is from CameraX analysis use case, must call image.close() on received
                 // images when finished using them. Otherwise, new images may not be received or the camera

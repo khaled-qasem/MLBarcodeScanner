@@ -23,8 +23,7 @@ class CameraXViewModel(application: Application) : AndroidViewModel(application)
                 cameraProviderLiveData = MutableLiveData()
                 val cameraProviderFuture =
                     ProcessCameraProvider.getInstance(getApplication())
-                cameraProviderFuture.addListener(
-                    Runnable {
+                cameraProviderFuture.addListener({
                         try {
                             cameraProviderLiveData!!.setValue(cameraProviderFuture.get())
                         } catch (e: ExecutionException) {
